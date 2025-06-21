@@ -1,0 +1,169 @@
+<!-- Encabezado -->
+<header class="bg-white shadow-md py-4">
+  <div class="w-full px-4">
+    <h1 class="text-3xl font-extrabold text-blue-900 dark:text-blue-400 md:text-4xl">
+      <span class="bg-gradient-to-r from-sky-400 to-blue-600 bg-clip-text text-transparent">
+        🐔 Alimentos
+      </span>
+    </h1>
+  </div>
+</header>
+
+<!-- Card 1 : Subtitulo, Boton agregar, Filtro de busqueda y boton de descarga -->
+<div class="container mx-auto my-6 p-4 bg-white shadow-md rounded-lg">
+
+  <!-- Subtitulo y boton de agregar -->
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-bold">Lista de Alimentos</h2>
+    <button *ngIf="!showInactive"
+      class="bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-4 rounded flex items-center text-base"
+      (click)="openCreateModal()">
+      <i class="fas fa-plus mr-2"></i> Agregar Alimento
+    </button>
+  </div>
+
+  <!-- Filtro de busqueda -->
+  <div class="flex items-center justify-between mb-4">
+    <div *ngIf="!showInactive" class="flex items-center">
+      <label for="foodTypeFilter" class="font-semibold mr-2">Buscar por tipo:</label>
+      <input id="foodTypeFilter" type="text" class="border rounded p-2" [(ngModel)]="foodTypeFilter"
+        placeholder="Escribe el tipo de alimento" />
+      <button class="ml-2 bg-blue-500 text-white font-bold py-2 px-4 rounded" (click)="filterByType()">
+        Buscar
+      </button>
+    </div>
+
+    <!-- Boton de descargas -->
+    <div *ngIf="!showInactive" class="relative">
+      <button class="bg-blue-500 text-white font-bold py-2 px-4 rounded" (click)="toggleDownload()">
+        Descargar <i class="fas fa-download ml-2"></i>
+      </button>
+      <div class="absolute right-0 mt-2 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10"
+        [ngClass]="{ 'hidden': !downloadOpen }">
+        <ul>
+          <li>
+            <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              (click)="exportToPDF(); toggleDownload()">PDF</button>
+          </li>
+          <li>
+            <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              (click)="exportToExcel(); toggleDownload()">Excel</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para insertar un nuevo registro -->
+<app-create-modal (foodAdded)="loadFoods()"></app-create-modal>
+
+<!-- Card 2 : Switcher de estado y tabla de datos -->
+<div class="container mx-auto my-6 p-4 bg-white shadow-md rounded-lg">
+
+  <!-- Switcher de Estado -->
+  <div class="flex items-center mb-4">
+    <span class="mr-2 font-semibold">Mostrar:</span>
+    <label class="relative inline-flex items-center cursor-pointer" for="toggleInactive">
+      <input type="checkbox" class="sr-only peer" id="toggleInactive" (change)="toggleFoodList()"
+        [checked]="!showInactive">
+      <div
+        class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500">
+      </div>
+      <span class="ml-3 text-sm font-medium text-gray-900">
+        {{ showInactive ? 'Alimentos Inactivos' : 'Alimentos Activos' }}
+      </span>
+    </label>
+  </div>
+
+  <!-- Tabla de datos -->
+  <div class="overflow-auto">
+    <table class="min-w-full text-center border-separate" style="border-spacing: 0 10px;">
+      <thead>
+        <tr>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">Tipo de Alimento</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">Marca</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">Empaque</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">Cantidad</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">U. medida</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100">Fecha de Registro</th>
+          <th class="px-6 py-3 text-lg font-semibold text-blue-900 bg-blue-100 rounded-tr-lg">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Iterar sobre la lista de alimentos -->
+        <tr *ngFor="let food of getTableData()">
+          <td class="px-6 py-4 bg-gray-100">{{ food.foodType }}</td>
+          <td class="px-6 py-4 bg-gray-100">{{ food.foodBrand }}</td>
+          <td class="px-6 py-4 bg-gray-100">{{ food.packaging }}</td>
+          <td class="px-6 py-4 bg-gray-100">{{ food.amount }}</td>
+          <td class="px-6 py-4 bg-gray-100">{{ food.unitMeasure }}</td>
+          <td class="px-6 py-4 bg-gray-100">{{ food.entryDate | date:'dd/MMM/yy' }}</td>
+          <td class="px-6 py-4 bg-gray-100">
+
+            <ng-container *ngIf="showInactive">
+              <button class="btn btn-sm" data-bs-toggle="tooltip" title="Restaurar"
+                (click)="openModalRestore(food.idFood)">
+                <img src="https://img.icons8.com/?size=100&id=50827&format=png&color=40C057" alt="Restaurar"
+                  style="width: 20px; height: 20px;">
+              </button>
+              <button class="btn btn-sm" data-bs-toggle="tooltip" title="Eliminar físicamente"
+                (click)="openModalDelete(food.idFood)">
+                <img src="https://img.icons8.com/?size=100&id=67884&format=png&color=FA5252" alt="Eliminar físicamente"
+                  style="width: 20px; height: 20px;">
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="!showInactive">
+              <button class="btn btn-sm mr-2" data-bs-toggle="modal" data-bs-target="#editEmployeeModal"
+                (click)="editFoodData(food)">
+                <img src="https://img.icons8.com/?size=100&id=H5dKJanZkZNk&format=png&color=228BE6" alt="Editar"
+                  style="width: 25px; height: 25px;">
+              </button>
+              <button class="btn btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar lógicamente"
+                (click)="openModalDeactivate(food.idFood)">
+                <img src="https://img.icons8.com/?size=100&id=67884&format=png&color=12B886" alt="Eliminar lógicamente"
+                  style="width: 25px; height: 25px;">
+              </button>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginador -->
+  <div class="flex justify-center mt-4 space-x-2">
+    <button class="px-3 py-2 bg-gray-300 rounded-md text-sm font-semibold hover:bg-gray-400 disabled:opacity-50"
+      [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+      Anterior
+    </button>
+
+    <button *ngFor="let page of getPages()" class="px-3 py-2 rounded-md text-sm font-semibold"
+      [ngClass]="{'bg-blue-500 text-white': currentPage === page, 'bg-gray-200 hover:bg-gray-300': currentPage !== page}"
+      (click)="changePage(page)">
+      {{ page }}
+    </button>
+
+    <button class="px-3 py-2 bg-gray-300 rounded-md text-sm font-semibold hover:bg-gray-400 disabled:opacity-50"
+      [disabled]="currentPage === getPages().length" (click)="changePage(currentPage + 1)">
+      Siguiente
+    </button>
+  </div>
+
+</div>
+
+<!-- Modal para editar un registro -->
+<app-edit-modal [foodToEdit]="foodToEdit" [isModalEdit]="isModalEdit" (foodUpdated)="loadFoods()"></app-edit-modal>
+
+<!-- Modal para desactivar un alimento -->
+<app-deactivate-modal [foodIdToDeactivate]="foodIdToDeactivate" [isModalDeactivate]="isModalDeactivate"
+  (foodDeactivated)="loadFoods()"></app-deactivate-modal>
+
+<!-- Modal para restaurar un alimento -->
+<app-restore-modal [foodIdToRestore]="foodIdToRestore" [isModalRestore]="isModalRestore"
+  (foodRestored)="loadFoods()"></app-restore-modal>
+
+<!-- Modal para eliminar un alimento -->
+<app-delete-modal [foodIdToDelete]="foodIdToDelete" [isModalDelete]="isModalDelete"
+  (foodDeleted)="loadFoods()"></app-delete-modal>
